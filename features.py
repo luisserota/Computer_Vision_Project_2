@@ -143,12 +143,22 @@ class HarrisKeypointDetector(KeypointDetector):
                          the pixel value is the local maxima in
                          its 7x7 neighborhood.
         '''
+
+        height, width = harrisImage.shape[:2]
+
         destImage = np.zeros_like(harrisImage, np.bool)
 
         # TODO 2: Compute the local maxima image
         # TODO-BLOCK-BEGIN
 
-        destImage = scipy.ndimage.filters.maximum_filter(harrisImage, size=7, mode='constant')
+        maximaImage = scipy.ndimage.filters.maximum_filter(harrisImage, size=7, mode='constant')
+        for i in range (0, height):
+            for j in range(0, width):
+                if harrisImage[i][j] == maximaImage[i][j]:
+                    destImage[i][j] = True
+                else:
+                    destImage[i][j] = False
+
 
         # TODO-BLOCK-END
 
