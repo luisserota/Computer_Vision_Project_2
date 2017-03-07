@@ -126,7 +126,7 @@ class HarrisKeypointDetector(KeypointDetector):
                 else if ix < 0 and iy == 0:
                     Ori = 180
                 else:
-                    Ori = math.degress(math.atan(iy/ix))
+                    Ori = np.degrees(np.arctan2(iy,ix))
                 orientationImage[i][j] = Ori
         # TODO-BLOCK-END
 
@@ -207,7 +207,10 @@ class HarrisKeypointDetector(KeypointDetector):
                 # f.angle to the orientation in degrees and f.response to
                 # the Harris score
                 # TODO-BLOCK-BEGIN
-                raise Exception("TODO in features.py not implemented")
+                f.size = 10
+                f.pt = (x, y)
+                f.angle = orientationImage[y][x]
+                f.response = harrisImage[y][x]
                 # TODO-BLOCK-END
 
                 features.append(f)
@@ -270,7 +273,15 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
             # sampled centered on the feature point. Store the descriptor
             # as a row-major vector. Treat pixels outside the image as zero.
             # TODO-BLOCK-BEGIN
-            raise Exception("TODO in features.py not implemented")
+
+            count = 0
+            for k in range (-2,3):
+                for l in range(-2,3):
+                    if y+k < 0 or y+k > len(image) or x+l < 0 or x+l > len(image[0]):
+                        desc[i][count] = 0
+                    else:
+                        desc[i][count] = image[y+k][x+l]
+                    count += 1
             # TODO-BLOCK-END
 
         return desc
@@ -306,7 +317,9 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             transMx = np.zeros((2, 3))
 
             # TODO-BLOCK-BEGIN
-            raise Exception("TODO in features.py not implemented")
+
+
+
             # TODO-BLOCK-END
 
             # Call the warp affine function to do the mapping
