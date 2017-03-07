@@ -105,14 +105,29 @@ class HarrisKeypointDetector(KeypointDetector):
 
         for i in range(0, height):
             for j in range(0, width):
+
+                # Computer Harris Image
                 ix = sobelImageIX[i][j]
                 iy = sobelImageIY[i][j]
                 A = scipy.ndimage.filters.gaussian_filter(ix*ix,sigma=0.5)
                 B = scipy.ndimage.filters.gaussian_filter(ix*iy,sigma=0.5)
                 C = scipy.ndimage.filters.gaussian_filter(iy*iy,sigma=0.5)
-                harrisImage[i][j] = [[A, B], [B, C]]
+                H = [[A, B], [B, C]]
+                cH = (np.linalg.det(H)) - (0.1*(math.pow(np.trace(H), np.trace(H))))
+                harrisImage[i][j] = cH
 
-
+                # Computer Orientation Image
+                if ix == 0 and iy > 0:
+                    Ori = 90
+                else if ix == 0 and iy < 0:
+                    Ori = -90
+                else if iy == 0 and ix > 0:
+                    Ori = 0
+                else if ix < 0 and iy == 0:
+                    Ori = 180
+                else:
+                    Ori = math.degress(math.atan(iy/ix))
+                orientationImage[i][j] = Ori
         # TODO-BLOCK-END
 
         return harrisImage, orientationImage
@@ -132,7 +147,9 @@ class HarrisKeypointDetector(KeypointDetector):
 
         # TODO 2: Compute the local maxima image
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+
+        destImage = scipy.ndimage.filters.maximum_filter(harrisImage, size=7, mode='constant')
+
         # TODO-BLOCK-END
 
         return destImage
