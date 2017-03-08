@@ -100,33 +100,35 @@ class HarrisKeypointDetector(KeypointDetector):
         # for each pixel and store it in 'orientationImage.'
         # TODO-BLOCK-BEGIN
 
-        sobelImageIX = scipy.ndimage.sobel(srcImage, axis=1, mode='reflect')
-        sobelImageIY = scipy.ndimage.sobel(srcImage, axis=0, mode='reflect')
+        sobelImageIX = scipy.ndimage.sobel(srcImage, 1, mode='constant', cval=0.0)
+        sobelImageIY = scipy.ndimage.sobel(srcImage, 0, mode='constant', cval=0.0)
 
+        A = scipy.ndimage.filters.gaussian_filter(sobelImageIX*sobelImageIX,sigma=0.5)
+        B = scipy.ndimage.filters.gaussian_filter(sobelImageIY*sobelImageIX,sigma=0.5)
+        C = scipy.ndimage.filters.gaussian_filter(sobelImageIY*sobelImageIY,sigma=0.5)
+        H = [[0,0],[0,0]]
         for i in range(0, height):
             for j in range(0, width):
 
                 # Computer Harris Image
-                ix = sobelImageIX[i][j]
-                iy = sobelImageIY[i][j]
-                A = scipy.ndimage.filters.gaussian_filter(ix*ix,sigma=0.5)
-                B = scipy.ndimage.filters.gaussian_filter(ix*iy,sigma=0.5)
-                C = scipy.ndimage.filters.gaussian_filter(iy*iy,sigma=0.5)
-                H = np.array([[A, B], [B, C]])
-                cH = (np.linalg.det(H)) - (0.1*(math.pow(np.trace(H), 2)))
+                H[0][0] = np.sum(A[i,j])
+                H[0][1] = np.sum(B[i,j])
+                H[1][0] = np.sum(B[i,j])
+                H[1][1] = np.sum(C[i,j])
+                cH = (np.linalg.det(H)) - (0.1*(np.trace(H) * np.trace(H)))
                 harrisImage[i][j] = cH
 
                 # Computer Orientation Image
-                if ix == 0 and iy > 0:
+                if sobelImageIX[i,j] == 0 and sobelImageIY[i,j] > 0:
                     Ori = 90
-                elif ix == 0 and iy < 0:
+                elif sobelImageIX[i,j] == 0 and sobelImageIY[i,j] < 0:
                     Ori = -90
-                elif iy == 0 and ix > 0:
+                elif sobelImageIY[i,j] == 0 and sobelImageIX[i,j] > 0:
                     Ori = 0
-                elif ix < 0 and iy == 0:
+                elif sobelImageIX[i,j] < 0 and sobelImageIY[i,j] == 0:
                     Ori = 180
                 else:
-                    Ori = np.degrees(np.arctan2(iy,ix))
+                    Ori = np.degrees(np.arctan2(sobelImageIY[i,j],sobelImageIX[i,j]))
                 orientationImage[i][j] = Ori
         # TODO-BLOCK-END
         print(harrisImage[40,89])
