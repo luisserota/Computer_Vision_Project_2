@@ -112,23 +112,24 @@ class HarrisKeypointDetector(KeypointDetector):
                 A = scipy.ndimage.filters.gaussian_filter(ix*ix,sigma=0.5)
                 B = scipy.ndimage.filters.gaussian_filter(ix*iy,sigma=0.5)
                 C = scipy.ndimage.filters.gaussian_filter(iy*iy,sigma=0.5)
-                H = [[A, B], [B, C]]
-                cH = (np.linalg.det(H)) - (0.1*(math.pow(np.trace(H), np.trace(H))))
+                H = np.array([[A, B], [B, C]])
+                cH = (np.linalg.det(H)) - (0.1*(math.pow(np.trace(H), 2)))
                 harrisImage[i][j] = cH
 
                 # Computer Orientation Image
                 if ix == 0 and iy > 0:
                     Ori = 90
-                else if ix == 0 and iy < 0:
+                elif ix == 0 and iy < 0:
                     Ori = -90
-                else if iy == 0 and ix > 0:
+                elif iy == 0 and ix > 0:
                     Ori = 0
-                else if ix < 0 and iy == 0:
+                elif ix < 0 and iy == 0:
                     Ori = 180
                 else:
                     Ori = np.degrees(np.arctan2(iy,ix))
                 orientationImage[i][j] = Ori
         # TODO-BLOCK-END
+        print(harrisImage[40,89])
 
         return harrisImage, orientationImage
 
@@ -318,7 +319,27 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
 
             # TODO-BLOCK-BEGIN
 
+            x, y = f.pt
+            newPt = np.array([-x,-y, 0])
 
+            # Get the translation matrix
+            t1 = transformations.get_trans_mx(newPt)
+
+            # Get the rotation matrix
+            angle = np.radians(f.angle)
+            rotation = transformations.get_rot_mx(0.0,0.0, angle)
+
+            # Get scale matrix - 0.2 so that it's at 1/5 scale
+            scale = transformations.get_scale_mx(0.2,0.2,1)
+
+            # Get the second transaltion matrix
+            t2 = transformations.get_trans_mx(np.array([4, 4, 0]))
+
+            # Compute dot matrix
+            dotResult = np.dot(np.dot(np.dot(t1, rotation), scale), t2)
+
+            transMx[0] = [ dotResult[0][0], dotResult[0][1], dotResult[0][3] ]
+            transMx[1] = [ dotResult[1][0], dotResult[1][1], dotResult[1][3] ]
 
             # TODO-BLOCK-END
 
@@ -331,7 +352,18 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             # variance. If the variance is zero then set the descriptor
             # vector to zero. Lastly, write the vector to desc.
             # TODO-BLOCK-BEGIN
-            raise Exception("TODO in features.py not implemented")
+
+            # Normalize
+            destImage -= destImage.mean()
+
+            destImageStdDev = destImage.std()
+
+            if destImageStdDev == 0:
+                destImage = np.zeros(windowSize, windowSize)
+            else:
+                destImage /= destImageStdDev
+            dest[i] = destImage.flatten()
+
             # TODO-BLOCK-END
 
         return desc
@@ -457,7 +489,21 @@ class SSDFeatureMatcher(FeatureMatcher):
         # Note: multiple features from the first image may match the same
         # feature in the second image.
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+
+        for i in range(0, desc1):
+            cur_closest = cv2.DMatch()
+            cur_closest.queryIdx = i
+            cur_closest.trainIdx = 0
+            cur_closest.distance = scipy.spatial.distance.euclidean(desc[i], desc2[0])
+
+            for j in range(0, desc2):
+                eDist = scipy.spatial.distance.euclidean(desc[i], desc2[j])
+                if eDist < cur_closest.distance:
+                    cur_closest.trainIdx = j
+                    cur_closest.distance = eDist
+            matches.append(cur_closest)
+
+
         # TODO-BLOCK-END
 
         return matches
@@ -499,7 +545,18 @@ class RatioFeatureMatcher(FeatureMatcher):
         # feature in the second image.
         # You don't need to threshold matches in this function
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+
+        distances = spatial.distance.cdist(desc1, desc2, metric='euclidean')
+        sortedDistances = np.argsort(distances)
+        closestD1 = sortedDistances[:,0]
+        closestD2 = sortedDistances[:,1]
+        for i in range(0, closestD1.shape[0]):
+            match = cv2.DMatch()
+            match.queryIdx = i
+            match.trainIdx = closestD1[i]
+            match.distance = distances[i, closestD1[i]]/distances[i,closestD2[i]]
+            matches.append(match)
+
         # TODO-BLOCK-END
 
         return matches
