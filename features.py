@@ -268,6 +268,7 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
         image /= 255.
         grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         desc = np.zeros((len(keypoints), 5 * 5))
+        print(desc)
 
         for i, f in enumerate(keypoints):
             x, y = f.pt
@@ -280,10 +281,12 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
             count = 0
             for k in range (-2,3):
                 for l in range(-2,3):
-                    if y+k < 0 or y+k > len(image) or x+l < 0 or x+l > len(image[0]):
+                    # print(grayImage)
+                    if y+k < 0 or y+k > len(grayImage) or x+l < 0 or x+l > len(grayImage[0]):
                         desc[i][count] = 0
                     else:
-                        desc[i][count] = image[y+k][x+l]
+                        # print(image[y+k][x+l])
+                        desc[i][count] = grayImage[y+k][x+l]
                     count += 1
             # TODO-BLOCK-END
 
